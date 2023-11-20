@@ -37,3 +37,14 @@ b_value_js = """
         
         s2.change.emit();
         """
+
+
+profile_js = """
+        const inds = cb_obj.indices;
+        const d1 = s1.data;
+        
+        for (let i = 0; i < inds.length; i++)
+        {
+            alert(inds[i]);
+        }
+"""

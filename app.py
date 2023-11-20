@@ -7,11 +7,11 @@ from bokeh.models.callbacks import CustomJS
 from bokeh.layouts import layout, column, row
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import MultiChoice, Div, GlobalInlineStyleSheet
-from bokeh.models import DateRangePicker, Styles, BoxSelectTool, DataTable, TableColumn
+from bokeh.models import DateRangePicker, Styles, BoxSelectTool, DataTable, TableColumn, PolyDrawTool
 
 from func import longitude, latitude, set_parameters, get_station_xml, \
     get_quake_xml, get_network_codes, set_params_b_value
-from components.js import b_value_js
+from components.js import b_value_js, profile_js
 
 
 global_font = 'tahoma'  # tahoma
@@ -38,8 +38,10 @@ map_fig = figure(
     height=700,  # 700
     width=1000,  # 900
     outline_line_width=1,
-    outline_line_color='black'
+    outline_line_color='black',
+    tools='pan,box_zoom,wheel_zoom,save,reset',
 )
+map_fig.toolbar.autohide = True
 # Make triangles and text for stations
 station_source = ColumnDataSource(
     data=dict(
@@ -96,6 +98,31 @@ map_fig.circle(
     line_color='black'
 )
 set_parameters(map_fig, global_font)
+
+profile_source = ColumnDataSource(
+    data=dict(
+        lon=[],
+        lat=[],
+    )
+)
+profile_line = map_fig.multi_line(
+    xs='lon',
+    ys='lat',
+    color='green',
+    alpha=0.7,
+    source=profile_source,
+    line_width=3,
+    legend_label='Профиль'
+)
+draw_tool = PolyDrawTool(renderers=[profile_line])
+map_fig.add_tools(draw_tool)
+profile_source.selected.js_on_change(
+    'indices',
+    CustomJS(
+        args=dict(s1=profile_source),
+        code=profile_js,
+    )
+)
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -162,21 +189,32 @@ b_value_name = Div(
     )
 )
 b_value_output = Div(
-    text='',
+    text='a-value = NaN, b-value = NaN',
     styles=Styles(
         font=global_font,
         font_size='15px',
-        font_weight='itallic',
         margin_left='50px',
+        border='4px double black',
+        background='#ffb6c1',
+        padding='5px',
+        font_weight='bold',
+        font_style='italic'
     )
 )
 b_value_source = ColumnDataSource(data=dict(x=[], y=[]))
 b_line_source = ColumnDataSource(data=dict(x=[], y=[]))
+TOOLTIPS = [
+    ('index', '$index'),
+    ('magnitude', '$x'),
+    ('event num', '10 ** @y'),
+]
 b_value_fig = figure(
     height=250,
     width=700,
     tools='box_select,reset,pan,wheel_zoom',
+    tooltips=TOOLTIPS,
 )
+b_value_fig.toolbar.autohide = True
 b_value_fig.square(
     x='x',
     y='y',
@@ -252,6 +290,6 @@ curdoc().add_root(
         row(network_choice, date_range_picker, margin=(0, 65)),
         row(map_fig,
             column(b_value_name, b_value_output, b_value_fig, data_table_name, date_table, margin=(0, 60))
-            )
+            ),
     )
 )
