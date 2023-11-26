@@ -6,14 +6,16 @@ from bokeh.plotting import curdoc
 from bokeh.models.callbacks import CustomJS
 from bokeh.layouts import layout, column, row
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import MultiChoice, Div, GlobalInlineStyleSheet
+from bokeh.models import MultiChoice, Div, GlobalInlineStyleSheet, Spinner, InlineStyleSheet
 from bokeh.models import DateRangePicker, Styles, BoxSelectTool, DataTable, TableColumn, PolyDrawTool
 
+from obspy.geodetics.base import gps2dist_azimuth
+
 from func import longitude, latitude, set_parameters, get_station_xml, \
-    get_quake_xml, get_network_codes, set_params_b_value
-from components.js import b_value_js, profile_js
+    get_quake_xml, get_network_codes, set_params_charts, b_value_js, epsg3857_to_epsg4326
 
 
+seismology_picker_link = 'http://84.237.52.214:5000/'
 global_font = 'tahoma'  # tahoma
 main_font_size = '15px'
 stylesheet = GlobalInlineStyleSheet(css='body { margin-left: 50px}')
@@ -35,8 +37,8 @@ map_fig = figure(
     y_range=y_range,
     x_axis_type='mercator',
     y_axis_type='mercator',
-    height=700,  # 700
-    width=1000,  # 900
+    height=750,  # 700
+    width=1000,  # 1000
     outline_line_width=1,
     outline_line_color='black',
     tools='pan,box_zoom,wheel_zoom,save,reset',
@@ -116,13 +118,81 @@ profile_line = map_fig.multi_line(
 )
 draw_tool = PolyDrawTool(renderers=[profile_line])
 map_fig.add_tools(draw_tool)
-profile_source.selected.js_on_change(
-    'indices',
-    CustomJS(
-        args=dict(s1=profile_source),
-        code=profile_js,
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ PROFILE CHART -------------------------------------------------------
+def profile_callback(attr, old, new):
+
+    if len(new) != 1:
+        return 1
+    if len(profile_source.data['lat'][new[0]]) != 2:
+        return 1
+
+    points = []
+    for i in range(len(profile_source.data['lat'][new[0]])):
+        points.append(epsg3857_to_epsg4326(profile_source.data['lon'][new[0]][i],
+                                           profile_source.data['lat'][new[0]][i]))
+
+    min_lon = min([points[0][0], points[1][0]])
+    max_lon = max([points[0][0], points[1][0]])
+    min_lat = min([points[0][1], points[1][1]])
+    max_lat = max([points[0][1], points[1][1]])
+
+    prof_length = gps2dist_azimuth(lon1=points[0][0], lat1=points[0][1], lon2=points[1][0], lat2=points[1][1])[0]
+
+    if len(event_source.data['lon']) == 0:
+        return 1
+
+    event_y = []
+    event_x = []
+
+    for i in range(len(event_source.data['lon'])):
+        event_point = epsg3857_to_epsg4326(event_source.data['lon'][i], event_source.data['lat'][i])
+        if (event_point[0] > min_lon) and (event_point[0] < max_lon):
+            if (event_point[1] > min_lat) and (event_point[1] < max_lat):
+                p1e = gps2dist_azimuth(lon1=points[0][0], lat1=points[0][1], lon2=event_point[0], lat2=event_point[1])[0]
+                p2e = gps2dist_azimuth(lon1=points[1][0], lat1=points[1][1], lon2=event_point[0], lat2=event_point[1])[0]
+                cos_a = (prof_length ** 2 + p1e ** 2 - p2e ** 2) / (2 * prof_length * p1e)
+                sin_a = (1 - cos_a ** 2) ** 0.5
+                current_distance = p1e * sin_a
+                if current_distance < prof_length * 0.05:
+                    current_x_position = p1e * cos_a
+                    event_x.append(current_x_position)
+                    event_y.append(event_source.data['depth'][i])
+
+    depth_scatter_source.data = dict(x=event_x, y=event_y)
+
+    profile_fig.y_range.start = max(event_y) + 0.05 * max(event_y)
+    profile_fig.y_range.end = 0 - 0.05 * max(event_y)
+    profile_fig.x_range.start = 0 - 0.05 * prof_length
+    profile_fig.x_range.end = prof_length + 0.05 * prof_length
+
+
+profile_source.selected.on_change('indices', profile_callback)
+
+profile_name = Div(
+    text='Depth line chart',
+    styles=Styles(
+        font=global_font,
+        font_size='20px',
+        font_weight='bold',
     )
 )
+profile_fig = figure(
+    height=250,
+    width=700,
+    tools='box_select,pan,wheel_zoom',
+)
+depth_scatter_source = ColumnDataSource(
+    data=dict(
+        x=[0],
+        y=[100],
+    )
+)
+profile_fig.circle(x='x', y='y', source=depth_scatter_source, color='red', legend_label='Гипоцентры землетрясений')
+profile_fig.toolbar.autohide = True
+set_params_charts(profile_fig, global_font, 'X [km]', 'D e p t h [km]')
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -159,7 +229,6 @@ data_table_name = Div(
         font=global_font,
         font_size='20px',
         font_weight='bold',
-        # margin_left='50px',
     )
 )
 columns = [
@@ -172,7 +241,7 @@ columns = [
 date_table = DataTable(
     source=event_source,
     columns=columns,
-    height=300,
+    height=200,
     width=700,
     stylesheets=[stylesheet],
 )
@@ -185,7 +254,6 @@ b_value_name = Div(
         font=global_font,
         font_size='20px',
         font_weight='bold',
-        # margin_left='50px',
     )
 )
 b_value_output = Div(
@@ -198,15 +266,15 @@ b_value_output = Div(
         background='#ffb6c1',
         padding='5px',
         font_weight='bold',
-        font_style='italic'
+        font_style='italic',
     )
 )
-b_value_source = ColumnDataSource(data=dict(x=[], y=[]))
+b_value_source = ColumnDataSource(data=dict(x=[0], y=[0]))
 b_line_source = ColumnDataSource(data=dict(x=[], y=[]))
 TOOLTIPS = [
     ('index', '$index'),
     ('magnitude', '$x'),
-    ('event num', '10 ** @y'),
+    ('event num', '10 ^ @y'),
 ]
 b_value_fig = figure(
     height=250,
@@ -224,7 +292,7 @@ b_value_fig.square(
     alpha=0.7,
     source=b_value_source
 )
-set_params_b_value(b_value_fig, global_font)
+set_params_charts(b_value_fig, global_font, 'Magnitude', 'Log10(N)')
 b_value_fig.line(
     x='x',
     y='y',
@@ -261,6 +329,9 @@ def date_picker_callback(attr, old, new):
         gb_data['y'] = []
         for i in gb_data['x']:
             gb_data['y'].append(np.log10(len(np.where(mag_data > i)[0])))
+    else:
+        gb_data['x'] = np.zeros(1)
+        gb_data['y'] = [0]
     b_value_source.data = gb_data
     b_line_source.data = {'x': [], 'y': []}
     b_value_source.selected.indices = []
@@ -284,12 +355,149 @@ date_range_picker = DateRangePicker(
 date_range_picker.on_change('value', date_picker_callback)
 # ----------------------------------------------------------------------------------------------------------------------
 
+
+# ------------------------------------------------ TEXT SIZE SPINNER ---------------------------------------------------
+def text_size_spinner_callback(attr, old, new):
+    map_stations_text.glyph.text_font_size = str(new) + 'pt'
+
+
+text_size_spinner = Spinner(
+    title='Text size',
+    low=0,
+    high=20,
+    value=10,
+    width=80,
+    styles=Styles(
+            font=global_font,
+            font_size=main_font_size,
+            font_weight='bold',
+        )
+)
+text_size_spinner.on_change('value', text_size_spinner_callback)
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ TEXT OFFSET SPINNER -------------------------------------------------
+def text_offset_spinner_callback(attr, old, new):
+    map_stations_text.glyph.y_offset = new
+
+
+text_offset_spinner = Spinner(
+    title='Text offset',
+    low=-50,
+    high=50,
+    value=-15,
+    width=80,
+    styles=Styles(
+            font=global_font,
+            font_size=main_font_size,
+            font_weight='bold',
+        )
+)
+text_offset_spinner.on_change('value', text_offset_spinner_callback)
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ STATION SIZE SPINNER ------------------------------------------------
+def station_size_spinner_callback(attr, old, new):
+    map_stations.glyph.size = new
+
+
+station_size_spinner = Spinner(
+    title='Stations size',
+    low=5,
+    high=50,
+    value=25,
+    width=100,
+    styles=Styles(
+            font=global_font,
+            font_size=main_font_size,
+            font_weight='bold',
+        )
+)
+station_size_spinner.on_change('value', station_size_spinner_callback)
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ EVENT SIZE SPINNER --------------------------------------------------
+def event_size_spinner_callback(attr, old, new):
+    if len(event_source.data['size']) > 0:
+        event_source.data['size'] = np.array(event_source.data['mag']) * new
+
+
+event_size_spinner = Spinner(
+    title='Events size',
+    low=0.001,
+    high=20,
+    value=6,
+    step=0.1,
+    width=100,
+    styles=Styles(
+            font=global_font,
+            font_size=main_font_size,
+            font_weight='bold',
+        )
+)
+event_size_spinner.on_change('value', event_size_spinner_callback)
+# ----------------------------------------------------------------------------------------------------------------------
+stylesheet = InlineStyleSheet(
+    css="""
+    a:link, a:visited {
+      background-color: white;
+      color: black;
+      border: 2px solid #ffb6c1;
+      padding: 5px 10px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font: tahoma;
+      font-size: 15px;
+      font-weight: bold;
+    }
+    
+    a:hover, a:active {
+      background-color: #ffb6c1;
+      color: white;
+    }
+    """
+)
+
+links_div = Div(
+    text='<a href="{}">Seiscomp picker</a>'.format(seismology_picker_link),
+    align='end',
+    width=500,
+    height=70,
+    stylesheets=[stylesheet]
+)
+
 curdoc().add_root(
     layout(
-        row(header),
-        row(network_choice, date_range_picker, margin=(0, 65)),
-        row(map_fig,
-            column(b_value_name, b_value_output, b_value_fig, data_table_name, date_table, margin=(0, 60))
-            ),
+        row(
+            column(
+                header,
+                row(
+                    network_choice,
+                    date_range_picker,
+                    event_size_spinner,
+                    station_size_spinner,
+                    text_size_spinner,
+                    text_offset_spinner,
+                    margin=(0, 65)
+                ),
+                map_fig),
+            column(
+                links_div,
+                row(
+                    b_value_name,
+                    b_value_output
+                ),
+                b_value_fig,
+                profile_name,
+                profile_fig,
+                data_table_name,
+                date_table,
+                margin=(0, 60)
+            )
+        ),
     )
 )
