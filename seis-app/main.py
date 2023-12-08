@@ -108,7 +108,9 @@ profile_line = map_fig.multi_line(
 )
 draw_tool = PolyDrawTool(renderers=[profile_line])
 map_fig.add_tools(draw_tool)
+map_fig.legend.background_fill_alpha = 0.3
 # ------------------------------------------------------------------------------------------------------------------
+
 
 # ------------------------------------------------ PROFILE CHART ---------------------------------------------------
 def profile_callback(attr, old, new):
@@ -159,6 +161,7 @@ def profile_callback(attr, old, new):
     profile_fig.x_range.start = 0 - 0.05 * prof_length
     profile_fig.x_range.end = prof_length + 0.05 * prof_length
 
+
 profile_source.selected.on_change('indices', profile_callback)
 
 profile_name = Div(
@@ -183,7 +186,10 @@ depth_scatter_source = ColumnDataSource(
 profile_fig.circle(x='x', y='y', source=depth_scatter_source, color='red', legend_label='Гипоцентры землетрясений')
 profile_fig.toolbar.autohide = True
 set_params_charts(profile_fig, global_font, 'X [km]', 'D e p t h [km]')
+profile_fig.legend.location = "bottom_right"
+profile_fig.legend.background_fill_alpha = 0.3
 # ------------------------------------------------------------------------------------------------------------------
+
 
 # ----------------------------------------------- NETWORK CHOICE ---------------------------------------------------
 def network_choice_callback(attr, old, new):
@@ -195,6 +201,7 @@ def network_choice_callback(attr, old, new):
             code += '%2C'
         data = get_station_xml(code)
     station_source.data = data
+
 
 network_options = get_network_codes()
 network_choice = MultiChoice(
@@ -209,6 +216,7 @@ network_choice = MultiChoice(
 )
 network_choice.on_change('value', network_choice_callback)
 # ------------------------------------------------------------------------------------------------------------------
+
 
 # ----------------------------------------------- TAB --------------------------------------------------------------
 data_table_name = Div(
@@ -233,6 +241,7 @@ date_table = DataTable(
     width=700,
 )
 # ------------------------------------------------------------------------------------------------------------------
+
 
 # ----------------------------------------------- B VALUE ----------------------------------------------------------
 b_value_name = Div(
@@ -298,7 +307,9 @@ b_value_source.selected.js_on_change(
         code=b_value_js,
     )
 )
+b_value_fig.legend.background_fill_alpha = 0.3
 # ------------------------------------------------------------------------------------------------------------------
+
 
 # ----------------------------------------------- DATE PICKER ------------------------------------------------------
 def date_picker_callback(attr, old, new):
@@ -319,6 +330,7 @@ def date_picker_callback(attr, old, new):
     b_line_source.data = {'x': [], 'y': []}
     b_value_source.selected.indices = []
 
+
 date_range_picker = DateRangePicker(
     title='Select date range',
     value=(
@@ -337,9 +349,11 @@ date_range_picker = DateRangePicker(
 date_range_picker.on_change('value', date_picker_callback)
 # ------------------------------------------------------------------------------------------------------------------
 
+
 # ------------------------------------------------ TEXT SIZE SPINNER -----------------------------------------------
 def text_size_spinner_callback(attr, old, new):
     map_stations_text.glyph.text_font_size = str(new) + 'pt'
+
 
 text_size_spinner = Spinner(
     title='Text size',
@@ -356,9 +370,11 @@ text_size_spinner = Spinner(
 text_size_spinner.on_change('value', text_size_spinner_callback)
 # ------------------------------------------------------------------------------------------------------------------
 
+
 # ------------------------------------------------ TEXT OFFSET SPINNER ---------------------------------------------
 def text_offset_spinner_callback(attr, old, new):
     map_stations_text.glyph.y_offset = new
+
 
 text_offset_spinner = Spinner(
     title='Text offset',
@@ -375,9 +391,11 @@ text_offset_spinner = Spinner(
 text_offset_spinner.on_change('value', text_offset_spinner_callback)
 # ------------------------------------------------------------------------------------------------------------------
 
+
 # ------------------------------------------------ STATION SIZE SPINNER --------------------------------------------
 def station_size_spinner_callback(attr, old, new):
     map_stations.glyph.size = new
+
 
 station_size_spinner = Spinner(
     title='Stations size',
@@ -394,10 +412,12 @@ station_size_spinner = Spinner(
 station_size_spinner.on_change('value', station_size_spinner_callback)
 # ------------------------------------------------------------------------------------------------------------------
 
+
 # ------------------------------------------------ EVENT SIZE SPINNER ----------------------------------------------
 def event_size_spinner_callback(attr, old, new):
     if len(event_source.data['size']) > 0:
         event_source.data['size'] = np.array(event_source.data['mag']) * new
+
 
 event_size_spinner = Spinner(
     title='Events size',
@@ -415,6 +435,7 @@ event_size_spinner = Spinner(
 event_size_spinner.on_change('value', event_size_spinner_callback)
 # ------------------------------------------------------------------------------------------------------------------
 
+curdoc().title = 'Seis Interpretation'
 curdoc().add_root(
     layout(
         row(
