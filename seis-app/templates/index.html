@@ -18,7 +18,60 @@
       </div>
     </div>
 
-    {{ embed(roots.main_layout) }}
+    <ul class="bokeh-objects">
+
+      <li class="table-column">
+        <div class="dash-div">
+          <div> {{ embed(roots.date_range_picker) }} </div>
+          {{ embed(roots.table) }}
+        </div>
+      </li>
+
+      <li class="map-column">
+        <div class="dash-div">
+          {{ embed(roots.map) }}
+
+          <ul class="map-parameters">
+            <li class="option-text">
+              choose network
+              {{ embed(roots.network_choice) }}
+            </li>
+            <li class="option-text">
+              events size
+              {{ embed(roots.event_size_spinner) }}
+            </li>
+            <li class="option-text">
+              stations size
+              {{ embed(roots.station_size_spinner) }}
+            </li>
+            <li class="option-text">
+              text size
+              {{ embed(roots.text_size_spinner) }}
+            </li>
+            <li class="option-text">
+              text offset
+              {{ embed(roots.text_offset_spinner) }}
+            </li>
+          </ul>
+
+        </div>
+      </li>
+
+      <li class="b-value-column">
+        <div class="dash-div">
+          <div class="title-div"> Guttenberg-Richter law </div>
+          {{ embed(roots.b_value) }}
+        </div>
+      </li>
+
+      <li class="profile-column">
+        <div class="dash-div">
+          <div class="title-div"> Depth line chart </div>
+          {{ embed(roots.profile) }}
+        </div>
+      </li>
+
+    </ul>
 
   </div>
 

@@ -4,10 +4,9 @@ from datetime import datetime, timedelta
 
 from bokeh.io import curdoc
 from bokeh.models.callbacks import CustomJS
-from bokeh.layouts import layout, column, row
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import MultiChoice, Div, Spinner
-from bokeh.models import DateRangePicker, Styles, BoxSelectTool, DataTable, TableColumn, PolyDrawTool
+from bokeh.models import MultiChoice, Spinner, Select
+from bokeh.models import DateRangePicker, BoxSelectTool, DataTable, TableColumn, PolyDrawTool
 
 from obspy.geodetics.base import gps2dist_azimuth
 
@@ -15,6 +14,7 @@ from func import longitude, latitude, set_parameters, get_station_xml, \
     get_quake_xml, get_network_codes, set_params_charts, b_value_js, epsg3857_to_epsg4326
 
 
+sizing_mode = 'scale_width'
 global_font = 'tahoma'  # tahoma
 main_font_size = '15px'
 
@@ -26,12 +26,13 @@ map_fig = figure(
     y_range=y_range,
     x_axis_type='mercator',
     y_axis_type='mercator',
-    height=750,  # 700
-    width=1000,  # 1000
+    height=752,  # 700
+    width=900,  # 1000
     outline_line_width=1,
     outline_line_color='black',
     tools='pan,box_zoom,wheel_zoom,save,reset',
     name='map',
+    # sizing_mode=sizing_mode,
 )
 map_fig.toolbar.autohide = True
 # Make triangles and text for stations
@@ -48,8 +49,8 @@ map_stations = map_fig.triangle(
     size=25,
     color='blue',
     alpha=0.6,
-    legend_label='Пункты сети',
-    line_width=2,
+    legend_label='network stations',
+    line_width=1,
     line_color='black',
     source=station_source
 )
@@ -83,9 +84,9 @@ map_fig.circle(
     y='lat',
     size='size',
     color='red',
-    alpha=0.7,
+    alpha=0.6,
     source=event_source,
-    legend_label='Эпицентры землетрясений',
+    legend_label='events epicenters',
     line_width=1,
     line_color='black'
 )
@@ -101,15 +102,20 @@ profile_line = map_fig.multi_line(
     xs='lon',
     ys='lat',
     color='green',
-    alpha=0.7,
+    alpha=0.6,
     source=profile_source,
     line_width=3,
-    legend_label='Профиль'
+    legend_label='depth line'
 )
 draw_tool = PolyDrawTool(renderers=[profile_line])
 map_fig.add_tools(draw_tool)
 map_fig.legend.background_fill_alpha = 0.3
+curdoc().add_root(map_fig)
 # ------------------------------------------------------------------------------------------------------------------
+
+
+charts_height = 340
+charts_width = 610
 
 
 # ------------------------------------------------ PROFILE CHART ---------------------------------------------------
@@ -164,18 +170,12 @@ def profile_callback(attr, old, new):
 
 profile_source.selected.on_change('indices', profile_callback)
 
-profile_name = Div(
-    text='Depth line chart',
-    styles=Styles(
-        font=global_font,
-        font_size='20px',
-        font_weight='bold',
-    )
-)
 profile_fig = figure(
-    height=250,
-    width=700,
+    height=charts_height,
+    width=charts_width,
     tools='box_select,pan,wheel_zoom',
+    name='profile',
+    # sizing_mode=sizing_mode,
 )
 depth_scatter_source = ColumnDataSource(
     data=dict(
@@ -183,75 +183,23 @@ depth_scatter_source = ColumnDataSource(
         y=[100],
     )
 )
-profile_fig.circle(x='x', y='y', source=depth_scatter_source, color='red', legend_label='Гипоцентры землетрясений')
+profile_fig.circle(
+    x='x',
+    y='y',
+    source=depth_scatter_source,
+    color='red',
+    alpha=0.6,
+    legend_label='hypocenters'
+)
 profile_fig.toolbar.autohide = True
 set_params_charts(profile_fig, global_font, 'X [km]', 'D e p t h [km]')
 profile_fig.legend.location = "bottom_right"
 profile_fig.legend.background_fill_alpha = 0.3
-# ------------------------------------------------------------------------------------------------------------------
-
-
-# ----------------------------------------------- NETWORK CHOICE ---------------------------------------------------
-def network_choice_callback(attr, old, new):
-    data = dict(lat=[], lon=[], text=[])
-    if len(new) != 0:
-        code = ''
-        for i in new:
-            code += i
-            code += '%2C'
-        data = get_station_xml(code)
-    station_source.data = data
-
-
-network_options = get_network_codes()
-network_choice = MultiChoice(
-    title='Choose networks',
-    value=[],
-    options=network_options,
-    styles=Styles(
-            font=global_font,
-            font_size=main_font_size,
-            font_weight='bold',
-        )
-)
-network_choice.on_change('value', network_choice_callback)
-# ------------------------------------------------------------------------------------------------------------------
-
-
-# ----------------------------------------------- TAB --------------------------------------------------------------
-data_table_name = Div(
-    text='Information about selected earthquakes',
-    styles=Styles(
-        font=global_font,
-        font_size='20px',
-        font_weight='bold',
-    )
-)
-columns = [
-    TableColumn(field='time', title='Date'),
-    TableColumn(field='mag', title='Magnitude'),
-    TableColumn(field='depth', title='Depth'),
-    TableColumn(field='lat_origin', title='Latitude'),
-    TableColumn(field='lon_origin', title='Longitude'),
-]
-date_table = DataTable(
-    source=event_source,
-    columns=columns,
-    height=200,
-    width=700,
-)
+curdoc().add_root(profile_fig)
 # ------------------------------------------------------------------------------------------------------------------
 
 
 # ----------------------------------------------- B VALUE ----------------------------------------------------------
-b_value_name = Div(
-    text='Gutenberg-Richter law chart',
-    styles=Styles(
-        font=global_font,
-        font_size='20px',
-        font_weight='bold',
-    )
-)
 b_value_source = ColumnDataSource(data=dict(x=[0], y=[0]))
 b_line_source = ColumnDataSource(data=dict(x=[], y=[]))
 tooltips = [
@@ -260,10 +208,12 @@ tooltips = [
     ('event num', '10 ^ @y'),
 ]
 b_value_fig = figure(
-    height=250,
-    width=700,
+    height=charts_height,
+    width=charts_width,
     tools='box_select,reset,pan,wheel_zoom',
     tooltips=tooltips,
+    name='b_value',
+    # sizing_mode=sizing_mode,
 )
 b_value_fig.toolbar.autohide = True
 b_value_fig.square(
@@ -271,8 +221,8 @@ b_value_fig.square(
     y='y',
     size=7,
     color='red',
-    legend_label='Кумулятивный график',
-    alpha=0.7,
+    legend_label='cumulative',
+    alpha=0.6,
     source=b_value_source
 )
 b_text_source = ColumnDataSource(data=dict(text_x=[0], text_y=[0], text=['']))
@@ -280,10 +230,11 @@ b_value_fig.text(
     x='text_x',
     y='text_y',
     text='text',
-    color='#f57d8d',
+    color='#696969',
+    alpha=0.7,
     text_font=dict(value=global_font),
-    text_font_style='italic',
-    source=b_text_source)
+    source=b_text_source
+)
 
 set_params_charts(b_value_fig, global_font, 'Magnitude', 'Log10(N)')
 b_value_fig.line(
@@ -292,7 +243,7 @@ b_value_fig.line(
     color='black',
     line_width=2,
     line_dash='dashed',
-    legend_label='Аппроксимационная прямая',
+    legend_label='approximation',
     alpha=1,
     source=b_line_source
 )
@@ -308,6 +259,63 @@ b_value_source.selected.js_on_change(
     )
 )
 b_value_fig.legend.background_fill_alpha = 0.3
+curdoc().add_root(b_value_fig)
+# ------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------- TAB --------------------------------------------------------------
+columns = [
+    TableColumn(field='time', title='Date'),
+    TableColumn(field='mag', title='Magnitude'),
+    TableColumn(field='depth', title='Depth'),
+    TableColumn(field='lat_origin', title='Latitude'),
+    TableColumn(field='lon_origin', title='Longitude'),
+]
+data_table = DataTable(
+    source=event_source,
+    columns=columns,
+    height=775,
+    width=330,
+    name='table',
+    css_classes=['table-text'],
+    index_width=35,
+    autosize_mode='fit_columns',
+    # sizing_mode=sizing_mode,
+)
+curdoc().add_root(data_table)
+# ------------------------------------------------------------------------------------------------------------------
+
+
+# ----------------------------------------------- NETWORK CHOICE ---------------------------------------------------
+def network_choice_callback(attr, old, new):
+    # data = dict(lat=[], lon=[], text=[])
+    # if len(new) != 0:
+    #     code = ''
+    #     for i in new:
+    #         code += i
+    #         code += '%2C'
+    #     data = get_station_xml(code)
+    # station_source.data = data
+    data = dict(lat=[], lon=[], text=[])
+    if new != '-':
+        data = get_station_xml(new)
+    station_source.data = data
+
+
+network_options = get_network_codes()
+network_choice = Select(
+    value="-",
+    options=network_options + ['-'],
+    name='network_choice',
+    width=80,
+)
+# network_choice = MultiChoice(
+#     value=[],
+#     options=network_options,
+#     name='network_choice'
+# )
+network_choice.on_change('value', network_choice_callback)
+curdoc().add_root(network_choice)
 # ------------------------------------------------------------------------------------------------------------------
 
 
@@ -332,84 +340,18 @@ def date_picker_callback(attr, old, new):
 
 
 date_range_picker = DateRangePicker(
-    title='Select date range',
     value=(
         (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d'),
         (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'),
     ),
     min_date='1980-01-01',
     max_date=datetime.now().strftime('%Y-%m-%d'),
-    width=200,
-    styles=Styles(
-        font=global_font,
-        font_size=main_font_size,
-        font_weight='bold',
-    )
+    width=210,
+    name='date_range_picker',
+    css_classes=['table-text', 'table-title'],
 )
 date_range_picker.on_change('value', date_picker_callback)
-# ------------------------------------------------------------------------------------------------------------------
-
-
-# ------------------------------------------------ TEXT SIZE SPINNER -----------------------------------------------
-def text_size_spinner_callback(attr, old, new):
-    map_stations_text.glyph.text_font_size = str(new) + 'pt'
-
-
-text_size_spinner = Spinner(
-    title='Text size',
-    low=0,
-    high=20,
-    value=10,
-    width=80,
-    styles=Styles(
-            font=global_font,
-            font_size=main_font_size,
-            font_weight='bold',
-        )
-)
-text_size_spinner.on_change('value', text_size_spinner_callback)
-# ------------------------------------------------------------------------------------------------------------------
-
-
-# ------------------------------------------------ TEXT OFFSET SPINNER ---------------------------------------------
-def text_offset_spinner_callback(attr, old, new):
-    map_stations_text.glyph.y_offset = new
-
-
-text_offset_spinner = Spinner(
-    title='Text offset',
-    low=-50,
-    high=50,
-    value=-15,
-    width=80,
-    styles=Styles(
-            font=global_font,
-            font_size=main_font_size,
-            font_weight='bold',
-        )
-)
-text_offset_spinner.on_change('value', text_offset_spinner_callback)
-# ------------------------------------------------------------------------------------------------------------------
-
-
-# ------------------------------------------------ STATION SIZE SPINNER --------------------------------------------
-def station_size_spinner_callback(attr, old, new):
-    map_stations.glyph.size = new
-
-
-station_size_spinner = Spinner(
-    title='Stations size',
-    low=5,
-    high=50,
-    value=25,
-    width=100,
-    styles=Styles(
-            font=global_font,
-            font_size=main_font_size,
-            font_weight='bold',
-        )
-)
-station_size_spinner.on_change('value', station_size_spinner_callback)
+curdoc().add_root(date_range_picker)
 # ------------------------------------------------------------------------------------------------------------------
 
 
@@ -420,49 +362,71 @@ def event_size_spinner_callback(attr, old, new):
 
 
 event_size_spinner = Spinner(
-    title='Events size',
     low=0.001,
     high=20,
     value=6,
     step=0.1,
-    width=100,
-    styles=Styles(
-            font=global_font,
-            font_size=main_font_size,
-            font_weight='bold',
-        )
+    width=80,
+    name='event_size_spinner',
+    css_classes=['table-text'],
 )
 event_size_spinner.on_change('value', event_size_spinner_callback)
+curdoc().add_root(event_size_spinner)
+# ------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ TEXT SIZE SPINNER -----------------------------------------------
+def text_size_spinner_callback(attr, old, new):
+    map_stations_text.glyph.text_font_size = str(new) + 'pt'
+
+
+text_size_spinner = Spinner(
+    low=0,
+    high=20,
+    value=10,
+    width=80,
+    name='text_size_spinner',
+    css_classes=['table-text'],
+)
+text_size_spinner.on_change('value', text_size_spinner_callback)
+curdoc().add_root(text_size_spinner)
+# ------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ TEXT OFFSET SPINNER ---------------------------------------------
+def text_offset_spinner_callback(attr, old, new):
+    map_stations_text.glyph.y_offset = new
+
+
+text_offset_spinner = Spinner(
+    low=-50,
+    high=50,
+    value=-15,
+    width=80,
+    name='text_offset_spinner',
+    css_classes=['table-text'],
+)
+text_offset_spinner.on_change('value', text_offset_spinner_callback)
+curdoc().add_root(text_offset_spinner)
+# ------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ STATION SIZE SPINNER --------------------------------------------
+def station_size_spinner_callback(attr, old, new):
+    map_stations.glyph.size = new
+
+
+station_size_spinner = Spinner(
+    low=5,
+    high=50,
+    value=25,
+    width=80,
+    name='station_size_spinner',
+    css_classes=['table-text'],
+)
+station_size_spinner.on_change('value', station_size_spinner_callback)
+curdoc().add_root(station_size_spinner)
 # ------------------------------------------------------------------------------------------------------------------
 
 curdoc().theme = 'light_minimal'
 curdoc().title = 'Seis Interpretation'
-curdoc().add_root(
-    layout(
-        row(
-            column(
-                row(
-                    network_choice,
-                    date_range_picker,
-                    event_size_spinner,
-                    station_size_spinner,
-                    text_size_spinner,
-                    text_offset_spinner,
-                    margin=(0, 65)
-                ),
-                map_fig, margin=(0, 50)),
-            column(
-                row(
-                    b_value_name,
-                ),
-                b_value_fig,
-                profile_name,
-                profile_fig,
-                data_table_name,
-                date_table,
-                margin=(0, 60)
-            )
-        ),
-        name='main_layout'
-    )
-)
