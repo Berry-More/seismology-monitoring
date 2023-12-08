@@ -1,0 +1,25 @@
+{% extends base %}
+
+{% block title %} Seiscomp interpretation {% endblock %}
+
+{% block postamble%}
+  <style>
+    {% include 'styles.css' %}
+  </style>
+{% endblock %}
+
+{% block contents %}
+  <div class="content">
+    <div class="header">
+      <a href="#" class="logo">Seiscomp interpretation</a>
+      <div class="header-right">
+        <a class="active" href="#">SeisInt</a>
+        <a href="http://84.237.52.214:5000/">SeisPicker</a>
+      </div>
+    </div>
+
+    {{ embed(roots.main_layout) }}
+
+  </div>
+
+{% endblock %}
