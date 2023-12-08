@@ -97,26 +97,26 @@ def set_parameters(bokeh_figure, font):
     bokeh_figure.add_tile('OSM', retina=False)
     bokeh_figure.legend.location = 'bottom_left'
     bokeh_figure.legend.click_policy = 'hide'
-    bokeh_figure.legend.label_text_font_size = '12px'
-    bokeh_figure.legend.label_text_font_style = 'bold'
+    # bokeh_figure.legend.label_text_font_size = '12px'
+    # bokeh_figure.legend.label_text_font_style = 'bold'
     bokeh_figure.legend.label_text_font = font
-    bokeh_figure.legend.border_line_color = 'black'
-    bokeh_figure.legend.glyph_width = 50
-    bokeh_figure.legend.glyph_height = 50
-    bokeh_figure.xaxis.axis_label = 'в.д.'
-    bokeh_figure.yaxis.axis_label = 'с.ш.'
-    bokeh_figure.xaxis.axis_label_text_font_style = 'bold'
-    bokeh_figure.yaxis.axis_label_text_font_style = 'bold'
+    # bokeh_figure.legend.border_line_color = 'black'
+    bokeh_figure.legend.glyph_width = 30
+    # bokeh_figure.legend.glyph_height = 30
+    bokeh_figure.xaxis.axis_label = 'longitude'
+    bokeh_figure.yaxis.axis_label = 'latitude'
+    # bokeh_figure.xaxis.axis_label_text_font_style = 'bold'
+    # bokeh_figure.yaxis.axis_label_text_font_style = 'bold'
     bokeh_figure.xaxis.axis_label_text_font = font
     bokeh_figure.yaxis.axis_label_text_font = font
     bokeh_figure.xaxis.major_label_text_font = font
     bokeh_figure.yaxis.major_label_text_font = font
-    bokeh_figure.xaxis.major_label_text_font_style = 'bold'
-    bokeh_figure.yaxis.major_label_text_font_style = 'bold'
-    bokeh_figure.xaxis.axis_label_text_font_size = '20px'
-    bokeh_figure.yaxis.axis_label_text_font_size = '20px'
-    bokeh_figure.xaxis.major_label_text_font_size = '15px'
-    bokeh_figure.yaxis.major_label_text_font_size = '15px'
+    # bokeh_figure.xaxis.major_label_text_font_style = 'bold'
+    # bokeh_figure.yaxis.major_label_text_font_style = 'bold'
+    # bokeh_figure.xaxis.axis_label_text_font_size = '20px'
+    # bokeh_figure.yaxis.axis_label_text_font_size = '20px'
+    # bokeh_figure.xaxis.major_label_text_font_size = '15px'
+    # bokeh_figure.yaxis.major_label_text_font_size = '15px'
 
 
 def set_params_charts(bokeh_figure, font, x_name, y_name):

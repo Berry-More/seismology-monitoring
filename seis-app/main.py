@@ -435,6 +435,7 @@ event_size_spinner = Spinner(
 event_size_spinner.on_change('value', event_size_spinner_callback)
 # ------------------------------------------------------------------------------------------------------------------
 
+curdoc().theme = 'light_minimal'
 curdoc().title = 'Seis Interpretation'
 curdoc().add_root(
     layout(
