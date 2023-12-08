@@ -243,19 +243,6 @@ def bokeh_app(doc):
             font_weight='bold',
         )
     )
-    b_value_output = Div(
-        text='a-value = NaN, b-value = NaN',
-        styles=Styles(
-            font=global_font,
-            font_size='15px',
-            margin_left='50px',
-            border='4px double black',
-            background='#ffb6c1',
-            padding='5px',
-            font_weight='bold',
-            font_style='italic',
-        )
-    )
     b_value_source = ColumnDataSource(data=dict(x=[0], y=[0]))
     b_line_source = ColumnDataSource(data=dict(x=[], y=[]))
     tooltips = [
@@ -279,6 +266,16 @@ def bokeh_app(doc):
         alpha=0.7,
         source=b_value_source
     )
+    b_text_source = ColumnDataSource(data=dict(text_x=[0], text_y=[0], text=['']))
+    b_value_fig.text(
+        x='text_x',
+        y='text_y',
+        text='text',
+        color='#f57d8d',
+        text_font=dict(value=global_font),
+        text_font_style='italic',
+        source=b_text_source)
+
     set_params_charts(b_value_fig, global_font, 'Magnitude', 'Log10(N)')
     b_value_fig.line(
         x='x',
@@ -297,7 +294,7 @@ def bokeh_app(doc):
     b_value_source.selected.js_on_change(
         'indices',
         CustomJS(
-            args=dict(s1=b_value_source, s2=b_line_source, div=b_value_output),
+            args=dict(s1=b_value_source, s2=b_line_source, s3=b_text_source),
             code=b_value_js,
         )
     )
@@ -435,7 +432,6 @@ def bokeh_app(doc):
                 column(
                     row(
                         b_value_name,
-                        b_value_output
                     ),
                     b_value_fig,
                     profile_name,

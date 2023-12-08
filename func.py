@@ -10,6 +10,7 @@ b_value_js = """
         const inds = cb_obj.indices;
         const d1 = s1.data;
         const d2 = s2.data;
+        const d3 = s3.data
 
         d2['x'] = [];
         d2['y'] = [];
@@ -40,10 +41,16 @@ b_value_js = """
         }
 
         a = a * -1
-        const line = 'a-value = ' + b.toFixed(2) + ', b-value = ' + a.toFixed(2);
-        div.text = line;
+        let line = ''
+        if (a.toString() != 'NaN')
+        {
+            line = 'a-value = ' + b.toFixed(2) + ', b-value = ' + a.toFixed(2);
+        }
+        
+        d3['text'][0] = line;
 
         s2.change.emit();
+        s3.change.emit();
         """
 
 
