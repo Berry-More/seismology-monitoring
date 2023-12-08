@@ -1,4 +1,4 @@
 # seismology-monitoring
 Web-service illustrating seiscomp data
 
-![plot](https://github.com/seismology-monitoring/seismology-monitoring/blob/pictures/seisinter.png?raw=true)
+![alt text](https://github.com/Berry-More/seismology-monitoring/blob/main/pictures/seisinter.png)
