@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from bokeh.io import curdoc
 from bokeh.models.callbacks import CustomJS
 from bokeh.plotting import figure, ColumnDataSource
-from bokeh.models import MultiChoice, Spinner, Select
+from bokeh.models import Spinner, Select
 from bokeh.models import DateRangePicker, BoxSelectTool, DataTable, TableColumn, PolyDrawTool
 
 from obspy.geodetics.base import gps2dist_azimuth
@@ -32,7 +32,6 @@ map_fig = figure(
     outline_line_color='black',
     tools='pan,box_zoom,wheel_zoom,save,reset',
     name='map',
-    # sizing_mode=sizing_mode,
 )
 map_fig.toolbar.autohide = True
 # Make triangles and text for stations
@@ -122,6 +121,7 @@ charts_width = 610
 def profile_callback(attr, old, new):
 
     if len(new) != 1:
+        depth_scatter_source.data=dict(x=[0], y=[100])
         return 1
     if len(profile_source.data['lat'][new[0]]) != 2:
         return 1
@@ -158,12 +158,11 @@ def profile_callback(attr, old, new):
                 if current_distance < prof_length * 0.05:
                     current_x_position = p1e * cos_a
                     event_x.append(current_x_position)
-                    event_y.append(event_source.data['depth'][i])
-                    # event_y.append(event_source.data['depth'][i] * -1)  # чтобы сделать график без инверсии Y
+                    event_y.append(event_source.data['depth'][i] * -1)  # чтобы сделать график без инверсии Y
 
     depth_scatter_source.data = dict(x=event_x, y=event_y)
-    profile_fig.y_range.start = max(event_y) + 0.05 * max(event_y)
-    profile_fig.y_range.end = 0 - 0.05 * max(event_y)
+    # profile_fig.y_range.start = max(event_y) + 0.05 * max(event_y)
+    # profile_fig.y_range.end = 0 - 0.05 * max(event_y)
     profile_fig.x_range.start = 0 - 0.05 * prof_length
     profile_fig.x_range.end = prof_length + 0.05 * prof_length
 
@@ -175,7 +174,6 @@ profile_fig = figure(
     width=charts_width,
     tools='box_select,pan,wheel_zoom',
     name='profile',
-    # sizing_mode=sizing_mode,
 )
 depth_scatter_source = ColumnDataSource(
     data=dict(
@@ -213,7 +211,6 @@ b_value_fig = figure(
     tools='box_select,reset,pan,wheel_zoom',
     tooltips=tooltips,
     name='b_value',
-    # sizing_mode=sizing_mode,
 )
 b_value_fig.toolbar.autohide = True
 b_value_fig.square(
@@ -280,7 +277,6 @@ data_table = DataTable(
     css_classes=['table-text'],
     index_width=35,
     autosize_mode='fit_columns',
-    # sizing_mode=sizing_mode,
 )
 curdoc().add_root(data_table)
 # ------------------------------------------------------------------------------------------------------------------
@@ -288,14 +284,6 @@ curdoc().add_root(data_table)
 
 # ----------------------------------------------- NETWORK CHOICE ---------------------------------------------------
 def network_choice_callback(attr, old, new):
-    # data = dict(lat=[], lon=[], text=[])
-    # if len(new) != 0:
-    #     code = ''
-    #     for i in new:
-    #         code += i
-    #         code += '%2C'
-    #     data = get_station_xml(code)
-    # station_source.data = data
     data = dict(lat=[], lon=[], text=[])
     if new != '-':
         data = get_station_xml(new)
@@ -309,11 +297,6 @@ network_choice = Select(
     name='network_choice',
     width=80,
 )
-# network_choice = MultiChoice(
-#     value=[],
-#     options=network_options,
-#     name='network_choice'
-# )
 network_choice.on_change('value', network_choice_callback)
 curdoc().add_root(network_choice)
 # ------------------------------------------------------------------------------------------------------------------
@@ -337,6 +320,8 @@ def date_picker_callback(attr, old, new):
     b_value_source.data = gb_data
     b_line_source.data = {'x': [], 'y': []}
     b_value_source.selected.indices = []
+
+    profile_callback(None, None, profile_source.selected.indices)
 
 
 date_range_picker = DateRangePicker(
