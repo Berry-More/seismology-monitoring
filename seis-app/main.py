@@ -9,9 +9,9 @@ from bokeh.models import Spinner, Select
 from bokeh.models import DateRangePicker, BoxSelectTool, DataTable, TableColumn, PolyDrawTool
 
 from obspy.geodetics.base import gps2dist_azimuth
-
+from func import b_value_js, event_size_js, station_size_js, text_size_js, text_offset_js
 from func import longitude, latitude, set_parameters, get_station_xml, \
-    get_quake_xml, get_network_codes, set_params_charts, b_value_js, epsg3857_to_epsg4326
+    get_quake_xml, get_network_codes, set_params_charts, epsg3857_to_epsg4326
 
 
 sizing_mode = 'scale_width'
@@ -121,7 +121,7 @@ charts_width = 610
 def profile_callback(attr, old, new):
 
     if len(new) != 1:
-        depth_scatter_source.data=dict(x=[0], y=[100])
+        depth_scatter_source.data = dict(x=[0], y=[100])
         return 1
     if len(profile_source.data['lat'][new[0]]) != 2:
         return 1
@@ -341,11 +341,6 @@ curdoc().add_root(date_range_picker)
 
 
 # ------------------------------------------------ EVENT SIZE SPINNER ----------------------------------------------
-def event_size_spinner_callback(attr, old, new):
-    if len(event_source.data['size']) > 0:
-        event_source.data['size'] = np.array(event_source.data['mag']) * new
-
-
 event_size_spinner = Spinner(
     low=0.001,
     high=20,
@@ -355,52 +350,15 @@ event_size_spinner = Spinner(
     name='event_size_spinner',
     css_classes=['table-text'],
 )
-event_size_spinner.on_change('value', event_size_spinner_callback)
+event_size_spinner.js_on_change(
+    'value',
+    CustomJS(args=dict(source=event_source), code=event_size_js)
+)
 curdoc().add_root(event_size_spinner)
 # ------------------------------------------------------------------------------------------------------------------
 
 
-# ------------------------------------------------ TEXT SIZE SPINNER -----------------------------------------------
-def text_size_spinner_callback(attr, old, new):
-    map_stations_text.glyph.text_font_size = str(new) + 'pt'
-
-
-text_size_spinner = Spinner(
-    low=0,
-    high=20,
-    value=10,
-    width=80,
-    name='text_size_spinner',
-    css_classes=['table-text'],
-)
-text_size_spinner.on_change('value', text_size_spinner_callback)
-curdoc().add_root(text_size_spinner)
-# ------------------------------------------------------------------------------------------------------------------
-
-
-# ------------------------------------------------ TEXT OFFSET SPINNER ---------------------------------------------
-def text_offset_spinner_callback(attr, old, new):
-    map_stations_text.glyph.y_offset = new
-
-
-text_offset_spinner = Spinner(
-    low=-50,
-    high=50,
-    value=-15,
-    width=80,
-    name='text_offset_spinner',
-    css_classes=['table-text'],
-)
-text_offset_spinner.on_change('value', text_offset_spinner_callback)
-curdoc().add_root(text_offset_spinner)
-# ------------------------------------------------------------------------------------------------------------------
-
-
 # ------------------------------------------------ STATION SIZE SPINNER --------------------------------------------
-def station_size_spinner_callback(attr, old, new):
-    map_stations.glyph.size = new
-
-
 station_size_spinner = Spinner(
     low=5,
     high=50,
@@ -409,8 +367,45 @@ station_size_spinner = Spinner(
     name='station_size_spinner',
     css_classes=['table-text'],
 )
-station_size_spinner.on_change('value', station_size_spinner_callback)
+station_size_spinner.js_on_change(
+    'value',
+    CustomJS(args=dict(gylph=map_stations.glyph), code=station_size_js)
+)
 curdoc().add_root(station_size_spinner)
+# ------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ TEXT SIZE SPINNER -----------------------------------------------
+text_size_spinner = Spinner(
+    low=0,
+    high=20,
+    value=10,
+    width=80,
+    name='text_size_spinner',
+    css_classes=['table-text'],
+)
+text_size_spinner.js_on_change(
+    'value',
+    CustomJS(args=dict(gylph=map_stations_text.glyph), code=text_size_js)
+)
+curdoc().add_root(text_size_spinner)
+# ------------------------------------------------------------------------------------------------------------------
+
+
+# ------------------------------------------------ TEXT OFFSET SPINNER ---------------------------------------------
+text_offset_spinner = Spinner(
+    low=-50,
+    high=50,
+    value=-15,
+    width=80,
+    name='text_offset_spinner',
+    css_classes=['table-text'],
+)
+text_offset_spinner.js_on_change(
+    'value',
+    CustomJS(args=dict(gylph=map_stations_text.glyph), code=text_offset_js)
+)
+curdoc().add_root(text_offset_spinner)
 # ------------------------------------------------------------------------------------------------------------------
 
 curdoc().theme = 'light_minimal'
