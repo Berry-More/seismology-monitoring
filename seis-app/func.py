@@ -53,6 +53,26 @@ b_value_js = """
         s3.change.emit();
         """
 
+event_size_js = """
+const num = cb_obj.value;
+const mag = source.data.mag;
+
+source.data.size = mag.map((x) => x * num);
+source.change.emit();
+"""
+
+station_size_js = """
+gylph.size = cb_obj.value;
+"""
+
+text_size_js = """
+gylph.text_font_size = cb_obj.value + 'pt';
+"""
+
+text_offset_js = """
+gylph.y_offset = cb_obj.value;
+"""
+
 
 def epsg3857_to_epsg4326(lon, lat):
     transform_3857_to_4326 = Transformer.from_crs('EPSG:3857', 'EPSG:4326')
