@@ -74,17 +74,14 @@ gylph.y_offset = cb_obj.value;
 """
 
 
-def epsg3857_to_epsg4326(lon, lat):
+def epsg3857_to_epsg4326(lon: float, lat: float) -> np.array:
+    """
+    :param lon: float in EPSG:3857 (-20037508.34 :: -20048966.1)
+    :param lat: float in EPSG:3857 (20037508.34 :: 20048966.1)
+    :return: np.array coordinates in EPSG:4326 (-180 :: 180, -85 :: 85)
+    """
     transform_3857_to_4326 = Transformer.from_crs('EPSG:3857', 'EPSG:4326')
     return np.array(transform_3857_to_4326.transform(lon, lat)[::-1])
-
-
-def spherical_cosine_theorem(t1, t2):
-    t1 = (t1[0]*np.pi/180, t1[1]*np.pi/180)
-    t2 = (t2[0]*np.pi/180, t2[1]*np.pi/180)
-    num = np.sqrt((np.cos(t2[0])*np.sin(t1[1]-t2[1]))**2 + (np.cos(t1[0])*np.sin(t2[0]) - np.sin(t1[0])*np.cos(t2[0])*np.cos(t1[1]-t2[1]))**2)
-    den = np.sin(t1[0])*np.sin(t2[0]) + np.cos(t1[0])*np.cos(t2[0])*np.cos(t1[1]-t2[1])
-    return np.arctan(num/den)*6372795
 
 
 def latitude(data):
@@ -157,7 +154,7 @@ def set_params_charts(bokeh_figure, font, x_name, y_name):
     bokeh_figure.yaxis.major_label_text_font_size = '10px'
 
 
-def get_network_codes():
+def get_network_codes() -> list:
     path = 'http://84.237.52.214:8080/fdsnws/station/1/query?'
     inventory = read_inventory(path)
     codes = []
@@ -166,7 +163,7 @@ def get_network_codes():
     return codes
 
 
-def get_station_xml(network_code='*'):
+def get_station_xml(network_code: str = '*') -> dict:
     path = 'http://84.237.52.214:8080/fdsnws/station/1/query?network={}'.format(network_code)
     inventory = read_inventory(path)
     data = {'name': [], 'lat': [], 'lon': []}
@@ -191,7 +188,7 @@ def get_quake_xml(times):
             data['lat_origin'].append(event.origins[0].latitude)
             data['lon_origin'].append(event.origins[0].longitude)
             data['depth'].append(event.origins[0].depth)
-            data['time'].append(event.origins[0].time.strftime('%Y-%m-%d'))
+            data['time'].append(event.origins[0].time.strftime('%Y-%m-%d %H:%M'))
             if event.magnitudes[0].mag > 0:
                 data['mag'].append(event.magnitudes[0].mag)
             else:
