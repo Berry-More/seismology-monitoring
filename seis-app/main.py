@@ -262,11 +262,11 @@ curdoc().add_root(b_value_fig)
 
 # ----------------------------------------------- TAB --------------------------------------------------------------
 columns = [
-    TableColumn(field='time', title='Date'),
-    TableColumn(field='mag', title='Magnitude'),
-    TableColumn(field='depth', title='Depth'),
-    TableColumn(field='lat_origin', title='Latitude'),
-    TableColumn(field='lon_origin', title='Longitude'),
+    TableColumn(field='time', title='Date', width=130),
+    TableColumn(field='mag', title='Magnitude', width=100),
+    TableColumn(field='depth', title='Depth', width=100),
+    TableColumn(field='lat_origin', title='Lat', width=50),
+    TableColumn(field='lon_origin', title='Lon', width=50),
 ]
 data_table = DataTable(
     source=event_source,
@@ -275,8 +275,8 @@ data_table = DataTable(
     width=330,
     name='table',
     css_classes=['table-text'],
-    index_width=35,
-    autosize_mode='fit_columns',
+    index_position=None,
+    autosize_mode='none',
 )
 curdoc().add_root(data_table)
 # ------------------------------------------------------------------------------------------------------------------
